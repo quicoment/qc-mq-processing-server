@@ -8,3 +8,7 @@ type CommentRequest struct {
 type CommentLikeRequest struct {
 	commentId int64
 }
+
+type QueueCreateRequest struct {
+	queueName string
+}
