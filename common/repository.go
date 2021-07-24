@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"github.com/gomodule/redigo/redis"
+	"github.com/pkg/errors"
 	"log"
 )
 
@@ -28,7 +29,7 @@ func GET(key int64) ([]byte, error) {
 	var data []byte
 	data, err := redis.Bytes(conn.Do("GET", key))
 	if err != nil {
-		return data, fmt.Errorf("error getting key %s: %v", key, err)
+		return data, errors.Errorf("error getting key %d: %w", key, err)
 	}
 	return data, err
 }
@@ -42,7 +43,7 @@ func GETALL(pattern string) ([]byte, error) {
 	keys, err := redis.Int64s(conn.Do("KEYS", pattern))
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting %s: %v", pattern, err)
+		return nil, errors.Errorf("error getting %s: %w", pattern, err)
 	}
 
 	for _, key := range keys {
@@ -53,32 +54,14 @@ func GETALL(pattern string) ([]byte, error) {
 	return data, nil
 }
 
-func UPDATE(key int64, value []byte) error {
+func INSERT(key int64, value []byte) error {
 	conn := connection()
 	defer conn.Close()
 
 	_, err := conn.Do("SET", key, value)
-	if err != nil {
-		v := string(value)
-		if len(v) > 15 {
-			v = v[0:12] + "..."
-		}
-		return fmt.Errorf("error setting key %s to %s: %v", key, v, err)
-	}
-	return err
-}
 
-func POST(key int64, value []byte) error {
-	conn := connection()
-	defer conn.Close()
-
-	var _, err = conn.Do("SET", key, value)
 	if err != nil {
-		v := string(value)
-		if len(v) > 15 {
-			v = v[0:12] + "..."
-		}
-		return fmt.Errorf("error setting key %s to %s: %v", key, v, err)
+		return errors.Errorf("error set key %d: %w", key, err)
 	}
 	return err
 }
@@ -88,6 +71,10 @@ func DELETE(key int64) error {
 	defer conn.Close()
 
 	_, err := conn.Do("DEL", key)
+
+	if err != nil {
+		return errors.Errorf("error delete key %d: %w", key, err)
+	}
 	return err
 }
 
@@ -96,37 +83,44 @@ func Incr(counterKey string) (int64, error) {
 	defer conn.Close()
 
 	key, err := redis.Int64(conn.Do("INCR", counterKey))
+
+	if err != nil {
+		return -1, errors.Errorf("error get increment key of %s: %w", counterKey, err)
+	}
 	return key, err
 }
 
-func POSTSet(setName string, value string) error {
+func INSERT_SET(setName string, value string) error {
 	conn := connection()
 	defer conn.Close()
 
-	_, err := conn.Do("SADD", setName, value)
+	finished, err := redis.Int(conn.Do("SADD", setName, value))
 	if err != nil {
-		v := string(value)
-		if len(v) > 15 {
-			v = v[0:12] + "..."
-		}
-		return fmt.Errorf("error setting key %s to %s: %v", setName, v, err)
+		return errors.Errorf("%d commands were successful, but not completed: %w", finished, err)
 	}
 	return err
 }
 
-func DELETESet(setName string, value string) error {
+func DELETE_SET(setName string, value string) error {
 	conn := connection()
 	defer conn.Close()
 
-	_, err := conn.Do("SPOP", setName, value)
+	finished, err := redis.Int(conn.Do("SREM", setName, value))
+	if err != nil {
+		return errors.Errorf("%d commands were successful, but not completed: %w", finished, err)
+	}
 	return err
 }
 
-func GETALLSet(setName string) ([]byte, error) {
+func GETALL_SET(setName string) ([]byte, error) {
 	conn := connection()
 	defer conn.Close()
 
 	var data []byte
 	data, err := redis.Bytes(conn.Do("SMEMBERS", setName))
+
+	if err != nil {
+		return nil, errors.Errorf("error get key %s: %w", setName, err)
+	}
 	return data, err
 }
