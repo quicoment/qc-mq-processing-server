@@ -37,23 +37,20 @@ func GETALL(pattern string) ([]byte, error) {
 	conn := connection()
 	defer conn.Close()
 
-	iter := 0
-	var result []byte
-	var data string
-	for {
-		if arr, err := redis.Values(conn.Do("SCAN", iter, "MATCH", pattern)); err != nil {
-			panic(err)
-		} else {
-			iter, _ = redis.Int(arr[0], nil)
-			data, _ = redis.String(arr[1], nil)
-			result = append(result, data...)
-		}
+	var keys []int64
+	var data []byte
+	keys, err := redis.Int64s(conn.Do("KEYS", pattern))
 
-		if iter == 0 {
-			break
-		}
+	if err != nil {
+		return nil, fmt.Errorf("error getting %s: %v", pattern, err)
 	}
-	return result, nil
+
+	for _, key := range keys {
+		var d, _ = redis.String(conn.Do("GET", key))
+		data = append(data, d...)
+	}
+
+	return data, nil
 }
 
 func UPDATE(key int64, value []byte) error {
@@ -71,16 +68,11 @@ func UPDATE(key int64, value []byte) error {
 	return err
 }
 
-func POST(value []byte) error {
+func POST(key int64, value []byte) error {
 	conn := connection()
 	defer conn.Close()
 
-	var key, err = Incr("COMMENT")
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	_, err = conn.Do("SET", key, value)
+	var _, err = conn.Do("SET", key, value)
 	if err != nil {
 		v := string(value)
 		if len(v) > 15 {
