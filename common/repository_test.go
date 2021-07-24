@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-func Post_Test() {
+func INSERT_TEST() {
 	var c = domain.Comment{1, time.Now(), time.Now(), "content", "password", 0}
 	data, _ := json.Marshal(c)
-	err := POST(data)
+	err := INSERT(1, data)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

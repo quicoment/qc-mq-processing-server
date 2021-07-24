@@ -3,19 +3,23 @@ package common
 import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
+	"log"
 	"os"
 )
 
-var pool *redis.Pool
+var (
+	pool *redis.Pool
+)
 
-func InitPool() {
+func InitPool(address string) {
 	pool = &redis.Pool{
-		MaxIdle:   80,
-		MaxActive: 12000,
+		MaxIdle:   20,
+		MaxActive: 100,
 		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", "localhost:6379")
+			conn, err := redis.Dial("tcp", address)
 			if err != nil {
 				err = errors.Errorf("ERROR: fail init redis: %w", err)
+				log.Fatal(err.Error())
 				os.Exit(1)
 			}
 			return conn, err
