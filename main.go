@@ -10,5 +10,5 @@ var (
 )
 
 func main() {
-	common.InitPool(*redisServer)
+	common.InitRedisPool(*redisServer)
 }
