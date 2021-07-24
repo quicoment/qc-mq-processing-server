@@ -1,29 +1,30 @@
 package common
 
 import (
-	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
-	"log"
+	"os"
 )
 
-func connection() redis.Conn {
-	c, err := redis.Dial("tcp", "localhost:6379")
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+var pool *redis.Pool
 
-	pong, err := redis.String(c.Do("PING"))
-	if err != nil {
-		c.Close()
-		log.Fatal(err.Error())
+func InitPool() {
+	pool = &redis.Pool{
+		MaxIdle:   80,
+		MaxActive: 12000,
+		Dial: func() (redis.Conn, error) {
+			conn, err := redis.Dial("tcp", "localhost:6379")
+			if err != nil {
+				err = errors.Errorf("ERROR: fail init redis: %w", err)
+				os.Exit(1)
+			}
+			return conn, err
+		},
 	}
-	fmt.Printf("PING Response = %s\n", pong)
-	return c
 }
 
 func GET(key int64) ([]byte, error) {
-	conn := connection()
+	conn := pool.Get()
 	defer conn.Close()
 
 	var data []byte
@@ -35,7 +36,7 @@ func GET(key int64) ([]byte, error) {
 }
 
 func GETALL(pattern string) ([]byte, error) {
-	conn := connection()
+	conn := pool.Get()
 	defer conn.Close()
 
 	var keys []int64
@@ -55,7 +56,7 @@ func GETALL(pattern string) ([]byte, error) {
 }
 
 func INSERT(key int64, value []byte) error {
-	conn := connection()
+	conn := pool.Get()
 	defer conn.Close()
 
 	_, err := conn.Do("SET", key, value)
@@ -67,7 +68,7 @@ func INSERT(key int64, value []byte) error {
 }
 
 func DELETE(key int64) error {
-	conn := connection()
+	conn := pool.Get()
 	defer conn.Close()
 
 	_, err := conn.Do("DEL", key)
@@ -79,7 +80,7 @@ func DELETE(key int64) error {
 }
 
 func Incr(counterKey string) (int64, error) {
-	conn := connection()
+	conn := pool.Get()
 	defer conn.Close()
 
 	key, err := redis.Int64(conn.Do("INCR", counterKey))
@@ -91,7 +92,7 @@ func Incr(counterKey string) (int64, error) {
 }
 
 func INSERT_SET(setName string, value string) error {
-	conn := connection()
+	conn := pool.Get()
 	defer conn.Close()
 
 	finished, err := redis.Int(conn.Do("SADD", setName, value))
@@ -102,7 +103,7 @@ func INSERT_SET(setName string, value string) error {
 }
 
 func DELETE_SET(setName string, value string) error {
-	conn := connection()
+	conn := pool.Get()
 	defer conn.Close()
 
 	finished, err := redis.Int(conn.Do("SREM", setName, value))
@@ -113,7 +114,7 @@ func DELETE_SET(setName string, value string) error {
 }
 
 func GETALL_SET(setName string) ([]byte, error) {
-	conn := connection()
+	conn := pool.Get()
 	defer conn.Close()
 
 	var data []byte
