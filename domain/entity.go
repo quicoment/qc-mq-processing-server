@@ -12,3 +12,7 @@ type Comment struct {
 	Password  string    `json:"password"`
 	Likes     int       `json:"likes"`
 }
+
+type QueueName struct {
+	name string
+}
