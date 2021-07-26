@@ -117,12 +117,12 @@ func DELETE_SET(setName string, value string) error {
 	return err
 }
 
-func GETALL_SET(setName string) ([]byte, error) {
+func GETALL_SET(setName string) ([]string, error) {
 	conn := redisPool.Get()
 	defer conn.Close()
 
-	var data []byte
-	data, err := redis.Bytes(conn.Do("SMEMBERS", setName))
+	var data []string
+	data, err := redis.Strings(conn.Do("SMEMBERS", setName))
 
 	if err != nil {
 		return nil, errors.Errorf("error get key %s: %w", setName, err)
