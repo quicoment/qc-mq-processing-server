@@ -26,10 +26,10 @@ func CreateQueue(c *gin.Context) {
 		Schema:         "amqp",
 		Username:       "username",
 		Password:       "password",
-		Host:           "localhost",
+		Host:           "127.0.0.1",
 		Port:           "5672",
-		VHost:          "my_vhost",
-		ConnectionName: "my_app_name",
+		VHost:          "",
+		ConnectionName: "",
 	}
 	rabbit := common.NewRabbit(rabbitConfig)
 	if err = rabbit.ConnectRabbit(); err != nil {
@@ -37,7 +37,7 @@ func CreateQueue(c *gin.Context) {
 	}
 
 	consumerConfig := common.ConsumerConfig{
-		ExchangeName:  "user",
+		ExchangeName:  "name.test", // TODO: exchange name 설정 필요
 		ExchangeType:  "direct",
 		RoutingKey:    "create",
 		QueueName:     request.QueueName,
