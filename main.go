@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	"github.com/gin-contrib/cors"
 	"github.com/quicoment/qc-mq-processing-server/api"
 	"github.com/quicoment/qc-mq-processing-server/common"
 	"time"
@@ -35,7 +35,7 @@ func setupRouter() *gin.Engine {
 		MaxAge:           1 * time.Hour,
 	}))
 
-	r.GET("/queues", api.CreateQueue)
+	r.POST("/queues", api.CreateQueue)
 
 	return r
 }
