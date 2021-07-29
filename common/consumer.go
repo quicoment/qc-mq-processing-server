@@ -9,14 +9,16 @@ import (
 )
 
 type ConsumerConfig struct {
-	ExchangeName  string
-	ExchangeType  string
-	RoutingKey    string
-	QueueName     string
-	ConsumerName  string
-	ConsumerCount int
-	PrefetchCount int
-	Reconnect     struct {
+	DirectExchangeName string
+	TopicExchangeName  string
+	DirectRoutingKey   string
+	TopicRoutingKey    string
+	RoutingKey         string
+	QueueName          string
+	ConsumerName       string
+	ConsumerCount      int
+	PrefetchCount      int
+	Reconnect          struct {
 		MaxAttempt int
 		Interval   time.Duration
 	}
@@ -47,8 +49,20 @@ func (c *Consumer) ConsumerStart() error {
 	}
 
 	if err := chn.ExchangeDeclare(
-		c.config.ExchangeName,
-		c.config.ExchangeType,
+		c.config.DirectExchangeName,
+		"direct",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	); err != nil {
+		return err
+	}
+
+	if err := chn.ExchangeDeclare(
+		c.config.TopicExchangeName,
+		"topic",
 		true,
 		false,
 		false,
@@ -64,7 +78,7 @@ func (c *Consumer) ConsumerStart() error {
 		false,
 		false,
 		false,
-		amqp.Table{"x-queue-mode": "lazy"},
+		nil,
 	); err != nil {
 		return err
 	}
@@ -72,7 +86,17 @@ func (c *Consumer) ConsumerStart() error {
 	if err := chn.QueueBind(
 		c.config.QueueName,
 		c.config.RoutingKey,
-		c.config.ExchangeName,
+		c.config.DirectExchangeName,
+		false,
+		nil,
+	); err != nil {
+		return err
+	}
+
+	if err := chn.QueueBind(
+		c.config.QueueName,
+		c.config.RoutingKey,
+		c.config.TopicExchangeName,
 		false,
 		nil,
 	); err != nil {
