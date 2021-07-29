@@ -20,7 +20,7 @@ func main() {
 	setupConsumer()
 
 	r := setupRouter()
-	if err := r.Run(); err != nil {
+	if err := r.Run(":9090"); err != nil {
 		errors.Errorf("Fail gin engine start: %w", err)
 	}
 }
@@ -66,14 +66,15 @@ func setupConsumer() {
 		}
 
 		consumerConfig := common.ConsumerConfig{
-			ExchangeName:  "name.test", // TODO: exchange name 설정 필요
-			ExchangeType:  "direct",
-			RoutingKey:    "create",
-			QueueName:     queueName,
-			ConsumerName:  queueName,
-			ConsumerCount: 3,
-			PrefetchCount: 1,
+			DirectExchangeName: "e.quicoment.register", // TODO: exchange name 설정 필요
+			TopicExchangeName:  "e.quicoment.like",     // TODO: exchange name 설정 필요
+			RoutingKey:         "create",
+			QueueName:          queueName,
+			ConsumerName:       queueName,
+			ConsumerCount:      3,
+			PrefetchCount:      1,
 		}
+
 		consumerConfig.Reconnect.MaxAttempt = 60
 		consumerConfig.Reconnect.Interval = 1 * time.Second
 		consumer := common.NewConsumer(consumerConfig, rabbit)
