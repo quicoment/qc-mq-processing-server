@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/apsdehal/go-logger"
 	"github.com/gin-gonic/gin"
 	"github.com/quicoment/qc-mq-processing-server/common"
@@ -17,6 +18,7 @@ func CreateQueue(c *gin.Context) {
 	var request domain.QueueCreateRequest
 
 	var err error
+	fmt.Print(request)
 	if err = c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "request body type error"})
 		return
@@ -24,8 +26,8 @@ func CreateQueue(c *gin.Context) {
 
 	rabbitConfig := common.RabbitConfig{
 		Schema:         "amqp",
-		Username:       "username",
-		Password:       "password",
+		Username:       "guest",
+		Password:       "guest",
 		Host:           "127.0.0.1",
 		Port:           "5672",
 		VHost:          "",
@@ -37,13 +39,14 @@ func CreateQueue(c *gin.Context) {
 	}
 
 	consumerConfig := common.ConsumerConfig{
-		ExchangeName:  "name.test", // TODO: exchange name 설정 필요
-		ExchangeType:  "direct",
-		RoutingKey:    "create",
-		QueueName:     request.QueueName,
-		ConsumerName:  request.QueueName,
-		ConsumerCount: 3,
-		PrefetchCount: 1,
+		DirectExchangeName: "e.quicoment.comment.register", // TODO: exchange name 설정 필요
+		TopicExchangeName:  "e.quicoment.comment.like",
+		DirectRoutingKey:   request.DirectRoutingKey,
+		TopicRoutingKey:    request.TopicRoutingKey,
+		QueueName:          request.QueueName,
+		ConsumerName:       request.QueueName,
+		ConsumerCount:      3,
+		PrefetchCount:      1,
 	}
 	consumerConfig.Reconnect.MaxAttempt = 60
 	consumerConfig.Reconnect.Interval = 1 * time.Second
