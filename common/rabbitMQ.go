@@ -7,13 +7,13 @@ import (
 )
 
 type RabbitConfig struct {
-	Schema         string
-	Username       string
-	Password       string
-	Host           string
-	Port           string
-	VHost          string
-	ConnectionName string
+	Schema         string `yaml:"Schema"`
+	Username       string `yaml:"Username"`
+	Password       string `yaml:"Password"`
+	Host           string `yaml:"Host"`
+	Port           string `yaml:"Port"`
+	VHost          string `yaml:"VHost"`
+	ConnectionName string `yaml:"ConnectionName"`
 }
 
 type Rabbit struct {

@@ -8,15 +8,19 @@ import (
 	"time"
 )
 
+type ConsumerConfigs struct {
+	Configs []ConsumerConfig `yaml:"ConsumerConfigs"`
+}
+
 type ConsumerConfig struct {
-	QueueName     string
-	ConsumerName  string
-	ConsumerCount int
-	PrefetchCount int
+	QueueName     string `yaml:"QueueName"`
+	ConsumerName  string `yaml:"ConsumerName"`
+	ConsumerCount int    `yaml:"ConsumerCount"`
+	PrefetchCount int    `yaml:"PrefetchCount"`
 	Reconnect     struct {
 		MaxAttempt int
 		Interval   time.Duration
-	}
+	} `yaml:"Reconnect"`
 }
 
 type Consumer struct {
