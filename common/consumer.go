@@ -9,16 +9,11 @@ import (
 )
 
 type ConsumerConfig struct {
-	DirectExchangeName string
-	TopicExchangeName  string
-	DirectRoutingKey   string
-	TopicRoutingKey    string
-	RoutingKey         string
-	QueueName          string
-	ConsumerName       string
-	ConsumerCount      int
-	PrefetchCount      int
-	Reconnect          struct {
+	QueueName     string
+	ConsumerName  string
+	ConsumerCount int
+	PrefetchCount int
+	Reconnect     struct {
 		MaxAttempt int
 		Interval   time.Duration
 	}
@@ -39,67 +34,14 @@ func NewConsumer(config ConsumerConfig, rabbit *Rabbit) *Consumer {
 func (c *Consumer) ConsumerStart() error {
 	con, err := c.Rabbit.CheckRabbitConnection()
 	if err != nil {
+		log.Fatal("unable to get rabbit connection: %w", err)
 		return err
 	}
 	go c.closedConnectionListener(con.NotifyClose(make(chan *amqp.Error)))
 
 	chn, err := con.Channel()
 	if err != nil {
-		return err
-	}
-
-	if err := chn.ExchangeDeclare(
-		c.config.DirectExchangeName,
-		"direct",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	); err != nil {
-		return err
-	}
-
-	if err := chn.ExchangeDeclare(
-		c.config.TopicExchangeName,
-		"topic",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	); err != nil {
-		return err
-	}
-
-	if _, err := chn.QueueDeclare(
-		c.config.QueueName,
-		true,
-		false,
-		false,
-		false,
-		nil,
-	); err != nil {
-		return err
-	}
-
-	if err := chn.QueueBind(
-		c.config.QueueName,
-		c.config.RoutingKey,
-		c.config.DirectExchangeName,
-		false,
-		nil,
-	); err != nil {
-		return err
-	}
-
-	if err := chn.QueueBind(
-		c.config.QueueName,
-		c.config.RoutingKey,
-		c.config.TopicExchangeName,
-		false,
-		nil,
-	); err != nil {
+		log.Fatal("unable to get rabbit channel: %w", err)
 		return err
 	}
 
@@ -114,7 +56,6 @@ func (c *Consumer) ConsumerStart() error {
 
 	// Simulate manual connection close
 	//_ = con.Close()
-
 	return nil
 }
 
@@ -153,7 +94,7 @@ func (c *Consumer) closedConnectionListener(closed <-chan *amqp.Error) {
 }
 
 func (c *Consumer) consume(channel *amqp.Channel, id int) {
-	msgs, err := channel.Consume(
+	messages, err := channel.Consume(
 		c.config.QueueName,
 		fmt.Sprintf("%s (%d/%d)", c.config.ConsumerName, id, c.config.ConsumerCount),
 		false,
@@ -163,22 +104,22 @@ func (c *Consumer) consume(channel *amqp.Channel, id int) {
 		nil,
 	)
 	if err != nil {
-		log.Println(fmt.Sprintf("CRITICAL: Unable to start consumer (%d/%d)", id, c.config.ConsumerCount))
+		log.Println(fmt.Sprintf("CRITICAL: Unable to start consumer (%d/%d): %w", id, c.config.ConsumerCount, err))
 
 		return
 	}
 
 	log.Println("[", id, "] Running ...")
 	log.Println("[", id, "] Press CTRL+C to exit ...")
-
-	for msg := range msgs {
+	for msg := range messages {
 		log.Println("[", id, "] Consumed:", string(msg.Body))
+		// TODO: parse message and redis update
 
 		if err := msg.Ack(false); err != nil {
-			// TODO: Should `Dead Letter Exchanges` the message
+			// TODO: ack을 보내지 못했을 때
 			log.Println("unable to acknowledge the message, dropped", err)
 		}
-	}
 
-	log.Println("[", id, "] Exiting ...")
+		log.Println("[", id, "] Exiting ...")
+	}
 }

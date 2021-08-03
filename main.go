@@ -2,10 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
-	"github.com/quicoment/qc-mq-processing-server/api"
 	"github.com/quicoment/qc-mq-processing-server/common"
 	"log"
 	"time"
@@ -18,68 +14,38 @@ var (
 func main() {
 	common.InitRedisPool(*redisServer)
 	setupConsumer()
-
-	r := setupRouter()
-	if err := r.Run(":9090"); err != nil {
-		errors.Errorf("Fail gin engine start: %w", err)
-	}
-}
-
-func setupRouter() *gin.Engine {
-	r := gin.Default()
-
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:8080"},
-		AllowMethods:     []string{"PUT", "PATCH", "POST", "GET", "OPTIONS", "DELETE"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           1 * time.Hour,
-	}))
-
-	r.POST("/queues", api.CreateQueue)
-
-	return r
+	select {}
 }
 
 func setupConsumer() {
-	queueNames, err := common.GETALL_SET("QUEUE")
-
-	if err != nil {
-		errors.Errorf("Fail setup consumer: %w", err)
+	rabbitConfig := common.RabbitConfig{
+		Schema:         "amqp",
+		Username:       "username",
+		Password:       "password",
+		Host:           "127.0.0.1",
+		Port:           "5672",
+		VHost:          "",
+		ConnectionName: "amqp",
 	}
 
-	for _, queueName := range queueNames {
-		var err error
-		rabbitConfig := common.RabbitConfig{
-			Schema:         "amqp",
-			Username:       "username",
-			Password:       "password",
-			Host:           "127.0.0.1",
-			Port:           "5672",
-			VHost:          "",
-			ConnectionName: "",
-		}
-		rabbit := common.NewRabbit(rabbitConfig)
-		if err = rabbit.ConnectRabbit(); err != nil {
-			log.Fatalf("unable to connect to rabbit: %w", err)
-		}
+	consumerConfig := common.ConsumerConfig{
+		ConsumerName:  "q.quicoment.name",
+		ConsumerCount: 100,
+		PrefetchCount: 100, // 메세지까지 한번에 Listener의 메모리에 Push 한 뒤 Consumer 가 메모리에서 하나씩 메세지를 꺼내서 처리
+	}
 
-		consumerConfig := common.ConsumerConfig{
-			DirectExchangeName: "e.quicoment.register", // TODO: exchange name 설정 필요
-			TopicExchangeName:  "e.quicoment.like",     // TODO: exchange name 설정 필요
-			RoutingKey:         "create",
-			QueueName:          queueName,
-			ConsumerName:       queueName,
-			ConsumerCount:      3,
-			PrefetchCount:      1,
-		}
+	rabbit := common.NewRabbit(rabbitConfig)
 
-		consumerConfig.Reconnect.MaxAttempt = 60
-		consumerConfig.Reconnect.Interval = 1 * time.Second
-		consumer := common.NewConsumer(consumerConfig, rabbit)
-		if err = consumer.ConsumerStart(); err != nil {
-			log.Fatalf("unable to start consumer: %w", err)
-		}
+	var err error
+	if err = rabbit.ConnectRabbit(); err != nil {
+		log.Fatalf("unable to connect to rabbit: %w", err)
+	}
+
+	consumerConfig.Reconnect.MaxAttempt = 60
+	consumerConfig.Reconnect.Interval = 1 * time.Second
+	consumer := common.NewConsumer(consumerConfig, rabbit)
+
+	if err = consumer.ConsumerStart(); err != nil {
+		log.Fatalf("unable to start consumer: %w", err)
 	}
 }
