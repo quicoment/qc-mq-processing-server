@@ -58,8 +58,6 @@ func (c *Consumer) ConsumerStart() error {
 		go c.consume(chn, id)
 	}
 
-	// Simulate manual connection close
-	//_ = con.Close()
 	return nil
 }
 
