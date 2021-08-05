@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	pool *redis.Pool
+	redisPool *redis.Pool
 )
 
-func InitPool(address string) {
-	pool = &redis.Pool{
+func InitRedisPool(address string) {
+	redisPool = &redis.Pool{
 		MaxIdle:   20,
 		MaxActive: 100,
 		Dial: func() (redis.Conn, error) {
@@ -28,7 +28,7 @@ func InitPool(address string) {
 }
 
 func GET(key int64) ([]byte, error) {
-	conn := pool.Get()
+	conn := redisPool.Get()
 	defer conn.Close()
 
 	var data []byte
@@ -40,7 +40,7 @@ func GET(key int64) ([]byte, error) {
 }
 
 func GETALL(pattern string) ([]byte, error) {
-	conn := pool.Get()
+	conn := redisPool.Get()
 	defer conn.Close()
 
 	var keys []int64
@@ -60,7 +60,7 @@ func GETALL(pattern string) ([]byte, error) {
 }
 
 func INSERT(key int64, value []byte) error {
-	conn := pool.Get()
+	conn := redisPool.Get()
 	defer conn.Close()
 
 	_, err := conn.Do("SET", key, value)
@@ -72,7 +72,7 @@ func INSERT(key int64, value []byte) error {
 }
 
 func DELETE(key int64) error {
-	conn := pool.Get()
+	conn := redisPool.Get()
 	defer conn.Close()
 
 	_, err := conn.Do("DEL", key)
@@ -84,7 +84,7 @@ func DELETE(key int64) error {
 }
 
 func Incr(counterKey string) (int64, error) {
-	conn := pool.Get()
+	conn := redisPool.Get()
 	defer conn.Close()
 
 	key, err := redis.Int64(conn.Do("INCR", counterKey))
@@ -96,7 +96,7 @@ func Incr(counterKey string) (int64, error) {
 }
 
 func INSERT_SET(setName string, value string) error {
-	conn := pool.Get()
+	conn := redisPool.Get()
 	defer conn.Close()
 
 	finished, err := redis.Int(conn.Do("SADD", setName, value))
@@ -107,7 +107,7 @@ func INSERT_SET(setName string, value string) error {
 }
 
 func DELETE_SET(setName string, value string) error {
-	conn := pool.Get()
+	conn := redisPool.Get()
 	defer conn.Close()
 
 	finished, err := redis.Int(conn.Do("SREM", setName, value))
@@ -117,12 +117,12 @@ func DELETE_SET(setName string, value string) error {
 	return err
 }
 
-func GETALL_SET(setName string) ([]byte, error) {
-	conn := pool.Get()
+func GETALL_SET(setName string) ([]string, error) {
+	conn := redisPool.Get()
 	defer conn.Close()
 
-	var data []byte
-	data, err := redis.Bytes(conn.Do("SMEMBERS", setName))
+	var data []string
+	data, err := redis.Strings(conn.Do("SMEMBERS", setName))
 
 	if err != nil {
 		return nil, errors.Errorf("error get key %s: %w", setName, err)

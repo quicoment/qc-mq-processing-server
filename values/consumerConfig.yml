@@ -1,0 +1,13 @@
+ConsumerConfigs:
+  - QueueName: queue.register
+    ConsumerName:  consumer.register
+    ConsumerCount: 10
+    PrefetchCount: 10
+  - QueueName: queue.like
+    ConsumerName:  consumer.like
+    ConsumerCount: 10
+    PrefetchCount: 10
+  - QueueName: queue.update
+    ConsumerName:  consumer.update
+    ConsumerCount: 10
+    PrefetchCount: 10

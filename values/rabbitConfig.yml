@@ -1,0 +1,7 @@
+Schema: amqp
+Username: username
+Password: password
+Host: localhost
+Port: 5672
+VHost:
+ConnectionName: local

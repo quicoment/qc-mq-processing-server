@@ -10,5 +10,7 @@ type CommentLikeRequest struct {
 }
 
 type QueueCreateRequest struct {
-	queueName string
+	QueueName        string
+	DirectRoutingKey string
+	TopicRoutingKey  string
 }
