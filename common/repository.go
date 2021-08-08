@@ -44,7 +44,6 @@ func createComment(comment domain.Comment) error {
 	_, err := redis.Values(conn.Do("EXEC"))
 
 	if err != nil {
-		panic(err)
 		return err
 	}
 
@@ -55,15 +54,23 @@ func likeComment(userId string, postId int64, commentId string) error {
 	conn := redisPool.Get()
 	defer conn.Close()
 
+	// like userId set key = comment:{commentId}
+	isMember, err := redis.Int64(conn.Do("SISMEMBER", "comment:"+commentId, userId))
+	if isMember == 1 {
+		return errors.Errorf("Same Person like comment: %s", commentId)
+	}
+	if err != nil {
+		return err
+	}
+
 	conn.Send("MULTI")
 	// like userId set key = comment:{commentId}
 	conn.Send("SADD", "comment:"+commentId, userId)
 	// like sorted set key = post:{postID}:likes
 	conn.Send("ZINCRBY", "post:"+commentId+":likes", 1, commentId)
-	_, err := redis.Values(conn.Do("EXEC"))
+	_, err = redis.Values(conn.Do("EXEC"))
 
 	if err != nil {
-		panic(err)
 		return err
 	}
 
@@ -74,13 +81,13 @@ func updateComment(comment domain.Comment) error {
 	conn := redisPool.Get()
 	defer conn.Close()
 
+	// data, _ := json.Marshal(comment)
 	// TODO: UPSERT
 	conn.Send("MULTI")
-
+	// conn.Send("SET", "comment:"+comment.ID+":cache", data)
 	_, err := redis.Values(conn.Do("EXEC"))
 
 	if err != nil {
-		panic(err)
 		return err
 	}
 
