@@ -3,6 +3,7 @@ module github.com/quicoment/qc-mq-processing-server
 go 1.16
 
 require (
+	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gomodule/redigo v1.8.5
 	github.com/kr/pretty v0.1.0 // indirect

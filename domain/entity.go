@@ -5,7 +5,7 @@ import (
 )
 
 type Comment struct {
-	ID        string    `json:"id"`
+	ID        int64     `json:"id"`
 	PostId    int64     `json:"postId"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -16,3 +16,4 @@ type Comment struct {
 type QueueName struct {
 	name string
 }
+
