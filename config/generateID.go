@@ -8,7 +8,7 @@ var (
 	node, _ = snowflake.NewNode(1)
 )
 
-func getId() int64 {
-	id := node.Generate().Int64()
+func GetId() string {
+	id := node.Generate().Base2()
 	return id
 }
