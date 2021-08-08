@@ -1,16 +1,26 @@
 package domain
 
-type CommentRequest struct {
-	Content  string
-	Password string
+import "time"
+
+type CommentCreateRequest struct {
+	PostId      int64
+	Content     string
+	Password    string
+	MessageType string
+	Timestamp   time.Time
 }
 
 type CommentLikeRequest struct {
-	commentId int64
+	PostId      int64
+	CommentId   string
+	userId      string
+	MessageType string
 }
 
-type QueueCreateRequest struct {
-	QueueName        string
-	DirectRoutingKey string
-	TopicRoutingKey  string
+type CommentUpdateRequest struct {
+	PostId      int64
+	CommentId   string
+	Content     string
+	MessageType string
+	Timestamp   time.Time
 }

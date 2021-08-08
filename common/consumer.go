@@ -117,6 +117,7 @@ func (c *Consumer) consume(channel *amqp.Channel, id int) {
 		log.Println("[", id, "] Consumed:", string(msg.Body))
 		// TODO: parse message and redis update
 
+
 		if err := msg.Ack(false); err != nil {
 			// TODO: ack을 보내지 못했을 때
 			log.Println("unable to acknowledge the message, dropped", err)
@@ -125,3 +126,4 @@ func (c *Consumer) consume(channel *amqp.Channel, id int) {
 		log.Println("[", id, "] Exiting ...")
 	}
 }
+
