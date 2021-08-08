@@ -5,12 +5,12 @@ import (
 )
 
 type Comment struct {
-	ID        int64     `json:"id"`
+	ID        string    `json:"id"`
+	PostId    int64     `json:"postId"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Content   string    `json:"content"`
 	Password  string    `json:"password"`
-	Likes     int       `json:"likes"`
 }
 
 type QueueName struct {

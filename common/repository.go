@@ -1,8 +1,10 @@
 package common
 
 import (
+	"encoding/json"
 	"github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
+	"github.com/quicoment/qc-mq-processing-server/domain"
 	"log"
 	"os"
 )
@@ -27,105 +29,60 @@ func InitRedisPool(address string) {
 	}
 }
 
-func GET(key int64) ([]byte, error) {
+func createComment(comment domain.Comment) error {
 	conn := redisPool.Get()
 	defer conn.Close()
 
-	var data []byte
-	data, err := redis.Bytes(conn.Do("GET", key))
+	data, _ := json.Marshal(comment)
+	conn.Send("MULTI")
+	// register list key = post:{postID}:comment
+	conn.Send("LPUSH", "post:"+comment.ID+":comment", comment.ID)
+	// like sorted set key = post:{postID}:likes
+	conn.Send("ZADD", "post:"+comment.ID+":likes", 0, comment.ID)
+	// string key = comment:{commentID}:cache
+	conn.Send("SET", "comment:"+comment.ID+":cache", data)
+	_, err := redis.Values(conn.Do("EXEC"))
+
 	if err != nil {
-		return data, errors.Errorf("error getting key %d: %w", key, err)
+		panic(err)
+		return err
 	}
-	return data, err
+
+	return nil
 }
 
-func GETALL(pattern string) ([]byte, error) {
+func likeComment(userId string, postId int64, commentId string) error {
 	conn := redisPool.Get()
 	defer conn.Close()
 
-	var keys []int64
-	var data []byte
-	keys, err := redis.Int64s(conn.Do("KEYS", pattern))
+	conn.Send("MULTI")
+	// like userId set key = comment:{commentId}
+	conn.Send("SADD", "comment:"+commentId, userId)
+	// like sorted set key = post:{postID}:likes
+	conn.Send("ZINCRBY", "post:"+commentId+":likes", 1, commentId)
+	_, err := redis.Values(conn.Do("EXEC"))
 
 	if err != nil {
-		return nil, errors.Errorf("error getting %s: %w", pattern, err)
+		panic(err)
+		return err
 	}
 
-	for _, key := range keys {
-		var d, _ = redis.String(conn.Do("GET", key))
-		data = append(data, d...)
-	}
-
-	return data, nil
+	return nil
 }
 
-func INSERT(key int64, value []byte) error {
+func updateComment(comment domain.Comment) error {
 	conn := redisPool.Get()
 	defer conn.Close()
 
-	_, err := conn.Do("SET", key, value)
+	// TODO: UPSERT
+	conn.Send("MULTI")
+
+	_, err := redis.Values(conn.Do("EXEC"))
 
 	if err != nil {
-		return errors.Errorf("error set key %d: %w", key, err)
+		panic(err)
+		return err
 	}
-	return err
-}
 
-func DELETE(key int64) error {
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	_, err := conn.Do("DEL", key)
-
-	if err != nil {
-		return errors.Errorf("error delete key %d: %w", key, err)
-	}
-	return err
-}
-
-func Incr(counterKey string) (int64, error) {
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	key, err := redis.Int64(conn.Do("INCR", counterKey))
-
-	if err != nil {
-		return -1, errors.Errorf("error get increment key of %s: %w", counterKey, err)
-	}
-	return key, err
-}
-
-func INSERT_SET(setName string, value string) error {
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	finished, err := redis.Int(conn.Do("SADD", setName, value))
-	if err != nil {
-		return errors.Errorf("%d commands were successful, but not completed: %w", finished, err)
-	}
-	return err
-}
-
-func DELETE_SET(setName string, value string) error {
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	finished, err := redis.Int(conn.Do("SREM", setName, value))
-	if err != nil {
-		return errors.Errorf("%d commands were successful, but not completed: %w", finished, err)
-	}
-	return err
-}
-
-func GETALL_SET(setName string) ([]string, error) {
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	var data []string
-	data, err := redis.Strings(conn.Do("SMEMBERS", setName))
-
-	if err != nil {
-		return nil, errors.Errorf("error get key %s: %w", setName, err)
-	}
-	return data, err
+	return nil
 }
