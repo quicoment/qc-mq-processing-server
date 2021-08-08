@@ -81,11 +81,9 @@ func updateComment(comment domain.Comment) error {
 	conn := redisPool.Get()
 	defer conn.Close()
 
-	// data, _ := json.Marshal(comment)
-	// TODO: UPSERT
-	conn.Send("MULTI")
-	// conn.Send("SET", "comment:"+comment.ID+":cache", data)
-	_, err := redis.Values(conn.Do("EXEC"))
+	data, _ := json.Marshal(comment)
+	// TODO: password 처리 논의
+	_, err := redis.Values(conn.Do("SET", "comment:"+comment.ID+":cache", data))
 
 	if err != nil {
 		return err
