@@ -5,14 +5,23 @@ import (
 )
 
 type Comment struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string    `json:"id"`
+	PostId    int64     `json:"postId"`
 	Content   string    `json:"content"`
 	Password  string    `json:"password"`
-	Likes     int       `json:"likes"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 type QueueName struct {
 	name string
+}
+
+func NewComment(request CommentCreateRequest) *Comment {
+	comment := new(Comment)
+	comment.ID = request.CommentId
+	comment.PostId = request.PostId
+	comment.Password = request.Password
+	comment.Timestamp = request.Timestamp
+	comment.Content = request.Content
+	return comment
 }
