@@ -140,12 +140,12 @@ func (c *Consumer) consume(channel *amqp.Channel, id int) {
 func processMessage(message string, messageType string) error {
 	switch messageType {
 	case "register":
-		var commentCreateRequest domain.CommentCreateRequest
-		if err := json.Unmarshal([]byte(message), &commentCreateRequest); err != nil {
+		var request domain.CommentCreateRequest
+		if err := json.Unmarshal([]byte(message), &request); err != nil {
 			errors.Errorf("Cannot parse to create request json: %w", err)
 		}
-		id := config.GetId()
-		comment := domain.Comment{id, commentCreateRequest.PostId, commentCreateRequest.Timestamp, commentCreateRequest.Timestamp, commentCreateRequest.Content, commentCreateRequest.Password}
+		request.ID = config.GetId()
+		comment := domain.NewComment(request)
 		return createComment(comment)
 
 	case "like":
@@ -154,14 +154,6 @@ func processMessage(message string, messageType string) error {
 			errors.Errorf("Cannot parse to create request json: %w", err)
 		}
 		return likeComment(commentLikeRequest.UserId, commentLikeRequest.PostId, commentLikeRequest.CommentId)
-
-	case "update":
-		var commentUpdateRequest domain.CommentUpdateRequest
-		if err := json.Unmarshal([]byte(message), &commentUpdateRequest); err != nil {
-			errors.Errorf("Cannot parse to create request json: %w", err)
-		}
-		comment := domain.Comment{commentUpdateRequest.CommentId, commentUpdateRequest.PostId, commentUpdateRequest.Timestamp, commentUpdateRequest.Timestamp, commentUpdateRequest.Content, commentUpdateRequest.Password}
-		return updateComment(comment)
 
 	default:
 		return errors.Errorf("wrong message type: %s", messageType)

@@ -29,7 +29,7 @@ func InitRedisPool(address string) {
 	}
 }
 
-func createComment(comment domain.Comment) error {
+func createComment(comment *domain.Comment) error {
 	conn := redisPool.Get()
 	defer conn.Close()
 
@@ -69,21 +69,6 @@ func likeComment(userId string, postId int64, commentId string) error {
 	// like sorted set key = post:{postID}:likes
 	conn.Send("ZINCRBY", "post:"+commentId+":likes", 1, commentId)
 	_, err = redis.Values(conn.Do("EXEC"))
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func updateComment(comment domain.Comment) error {
-	conn := redisPool.Get()
-	defer conn.Close()
-
-	data, _ := json.Marshal(comment)
-	// TODO: password 처리 논의
-	_, err := redis.Values(conn.Do("SET", "comment:"+comment.ID+":cache", data))
 
 	if err != nil {
 		return err
