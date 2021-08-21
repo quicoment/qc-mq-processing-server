@@ -11,6 +11,7 @@ import (
 
 var (
 	redisPool *redis.Pool
+	ttl       int8 = 3600
 )
 
 func InitRedisPool(address string) {
@@ -40,7 +41,7 @@ func createComment(comment *domain.Comment) error {
 	// like sorted set key = post:{postID}:likes
 	conn.Send("ZADD", "post:"+comment.ID+":likes", 0, comment.ID)
 	// string key = comment:{commentID}:cache
-	conn.Send("SET", "comment:"+comment.ID+":cache", data)
+	conn.Send("SETEX", "comment:"+comment.ID+":cache", ttl, data)
 	_, err := redis.Values(conn.Do("EXEC"))
 
 	if err != nil {
